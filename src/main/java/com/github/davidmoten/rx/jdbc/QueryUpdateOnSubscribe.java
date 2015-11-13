@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +73,7 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
     @Override
     public void call(Subscriber<? super T> subscriber) {
         final State state = new State();
+        final AtomicInteger batchCounter = new AtomicInteger();
         try {
             if (isBeginTransaction())
                 performBeginTransaction(subscriber);
@@ -79,11 +81,11 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
                 getConnection(state);
                 subscriber.add(createUnsubscriptionAction(state));
                 if (isCommit())
-                    performCommit(subscriber, state);
+                    performCommit(subscriber, state, batchCounter);
                 else if (isRollback())
                     performRollback(subscriber, state);
                 else
-                    performUpdate(subscriber, state);
+                    performUpdate(subscriber, state, batchCounter);
             }
         } catch (Exception e) {
             query.context().endTransactionObserve();
@@ -151,9 +153,21 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
      * 
      * @param subscriber
      * @param state
+     * @param batchCounter
+     * @throws SQLException
      */
     @SuppressWarnings("unchecked")
-    private void performCommit(Subscriber<? super T> subscriber, State state) {
+    private void performCommit(Subscriber<? super T> subscriber, State state,
+            AtomicInteger batchCounter) throws SQLException {
+        int counter = batchCounter.get();
+        if (counter > 0) {
+            log.debug("executing batch size=" + counter);
+            int count = sum(state.ps.executeBatch());
+            log.debug("on commit batch executed returning count of ", count);
+            // probably not needed
+            batchCounter.set(0);
+        }
+
         query.context().endTransactionObserve();
         if (subscriber.isUnsubscribed())
             return;
@@ -168,6 +182,7 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
         if (subscriber.isUnsubscribed())
             return;
 
+        // Non-zero indicates normal commit
         subscriber.onNext((T) Integer.valueOf(1));
         log.debug("committed");
         complete(subscriber);
@@ -198,12 +213,13 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
      * Executes the prepared statement.
      * 
      * @param subscriber
+     * @param batchCounter
      * 
      * @throws SQLException
      */
     @SuppressWarnings("unchecked")
-    private void performUpdate(final Subscriber<? super T> subscriber, State state)
-            throws SQLException {
+    private void performUpdate(final Subscriber<? super T> subscriber, State state,
+            AtomicInteger batchCounter) throws SQLException {
         if (subscriber.isUnsubscribed()) {
             return;
         }
@@ -219,10 +235,21 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
         if (subscriber.isUnsubscribed())
             return;
 
-        int count;
+        final int count;
         try {
-            log.debug("executing sql={}, parameters {}", query.sql(), parameters);
-            count = state.ps.executeUpdate();
+            if (query.batchSize() == 1) {
+                log.debug("executing sql={}, parameters {}", query.sql(), parameters);
+                count = state.ps.executeUpdate();
+            } else if (batchCounter.incrementAndGet() == query.batchSize()) {
+                log.debug("executing batch sql={}, parameters {}", query.sql(), parameters);
+                count = sum(state.ps.executeBatch());
+                // reset batch counter
+                batchCounter.set(0);
+            } else {
+                log.debug("adding batch sql={}, parameters {}", query.sql(), parameters);
+                state.ps.addBatch();
+                count = 0;
+            }
             log.debug("executed ps={}", state.ps);
             if (query.returnGeneratedKeys()) {
                 log.debug("getting generated keys");
@@ -250,6 +277,14 @@ final class QueryUpdateOnSubscribe<T> implements OnSubscribe<T> {
             subscriber.onNext((T) (Integer) count);
             complete(subscriber);
         }
+    }
+
+    private static int sum(int[] values) {
+        int sum = 0;
+        for (int n : values) {
+            sum += n;
+        }
+        return sum;
     }
 
     private Subscriber<T> createSubscriber(final Subscriber<? super T> subscriber) {
