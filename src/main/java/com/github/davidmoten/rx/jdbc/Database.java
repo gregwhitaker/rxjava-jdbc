@@ -34,7 +34,7 @@ import rx.schedulers.Schedulers;
  * Main entry point for manipulations of a database using rx-java-jdbc style
  * queries.
  */
-final public class Database {
+public class Database {
 
     /**
      * Logger.
@@ -133,6 +133,15 @@ final public class Database {
      */
     public Func1<ResultSet, ? extends ResultSet> getResultSetTransform() {
         return resultSetTransform;
+    }
+
+    /**
+     * Returns the supported {@link QueryLanguage}.
+     *
+     * @return
+     */
+    public QueryLanguage getLanguage() {
+        return QueryLanguage.SQL;
     }
 
     /**

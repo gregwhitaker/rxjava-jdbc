@@ -6,8 +6,7 @@ import rx.Scheduler;
 import rx.functions.Func1;
 
 /**
- * The threading and database connection context for mutliple jdbc queries.
- * 
+ * The threading and database connection context for multiple jdbc queries.
  */
 final class QueryContext {
 
@@ -15,9 +14,6 @@ final class QueryContext {
 
     /**
      * Constructor.
-     * 
-     * @param executor
-     * @param connectionProvider
      */
     QueryContext(Database db) {
         this.db = db;
@@ -39,6 +35,15 @@ final class QueryContext {
      */
     ConnectionProvider connectionProvider() {
         return db.connectionProvider();
+    }
+
+    /**
+     * Returns the database's supported query language.
+     *
+     * @return
+     */
+    QueryLanguage queryLanguage() {
+        return db.getLanguage();
     }
 
     void beginTransactionObserve() {

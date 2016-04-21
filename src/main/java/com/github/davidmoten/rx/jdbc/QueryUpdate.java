@@ -54,7 +54,7 @@ final public class QueryUpdate<T> implements Query {
         checkNotNull(parameters);
         checkNotNull(depends);
         checkNotNull(context);
-        this.jdbcQuery = NamedParameters.parse(sql);
+        this.jdbcQuery = NamedParameters.parse(sql, context);
         this.parameters = parameters;
         this.depends = depends;
         this.context = context;

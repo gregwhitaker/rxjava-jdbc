@@ -3,13 +3,15 @@ package com.github.davidmoten.rx.jdbc;
 import java.util.ArrayList;
 import java.util.List;
 
+import static javafx.scene.input.KeyCode.Q;
+
 public final class NamedParameters {
 
     private NamedParameters() {
         // disallow instantiation
     }
 
-    public static JdbcQuery parse(String namedSql) {
+    public static JdbcQuery parse(String namedSql, QueryContext ctx) {
         // was originally using regular expressions, but they didn't work well
         // for ignoring parameter-like strings inside quotes.
         List<String> names = new ArrayList<String>();

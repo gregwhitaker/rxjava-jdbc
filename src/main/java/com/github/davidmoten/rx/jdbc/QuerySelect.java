@@ -55,7 +55,7 @@ final public class QuerySelect implements Query {
         checkNotNull(depends);
         checkNotNull(context);
         checkNotNull(resultSetTransform);
-        this.jdbcQuery = NamedParameters.parse(sql);
+        this.jdbcQuery = NamedParameters.parse(sql, context);
         this.parameters = parameters;
         this.depends = depends;
         this.context = context;
