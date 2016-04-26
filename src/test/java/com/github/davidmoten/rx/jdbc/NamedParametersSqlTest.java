@@ -2,12 +2,14 @@ package com.github.davidmoten.rx.jdbc;
 
 import com.github.davidmoten.junit.Asserts;
 import com.github.davidmoten.rx.jdbc.NamedParameters.JdbcQuery;
+import org.h2.Driver;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.sql.DriverManager;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
@@ -45,7 +47,8 @@ public class NamedParametersSqlTest {
     }
 
     @Test
-    public void testNamedParametersAllMissingParametersShouldDoNothing() {
+    public void testNamedParametersAllMissingParametersShouldDoNothing() throws Exception {
+        DriverManager.registerDriver(new Driver());
         DatabaseCreator.db().select("select name from person where name = :name").count()
                 .subscribe();
     }
