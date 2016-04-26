@@ -13,7 +13,8 @@ Status: Released to Maven Central
 
 Features
 --------------------------
-* Functionally compose database queries run sequentially or in parallel 
+* Functionally compose database queries run sequentially or in parallel
+* Supports SQL queries for relational databases and CYPHER queries for Neo4j graph databases
 * Queries may be only partially run or indeed never run due to subscription cancellations thus improving efficiency
 * Concise code
 * Queries can depend on completion of other Observables and can be supplied parameters through Observables.

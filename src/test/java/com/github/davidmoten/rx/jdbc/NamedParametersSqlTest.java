@@ -1,31 +1,40 @@
 package com.github.davidmoten.rx.jdbc;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import com.github.davidmoten.junit.Asserts;
+import com.github.davidmoten.rx.jdbc.NamedParameters.JdbcQuery;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.util.Arrays;
 
-import org.junit.Test;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.when;
 
-import com.github.davidmoten.junit.Asserts;
-import com.github.davidmoten.rx.jdbc.NamedParameters.JdbcQuery;
-
-public class NamedParametersTest {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(QueryContext.class)
+public class NamedParametersSqlTest {
 
     @Test
     public void testSelect() {
+        QueryContext ctx = PowerMockito.mock(QueryContext.class);
+        when(ctx.queryLanguage()).thenReturn(QueryLanguage.SQL);
+
         JdbcQuery r = NamedParameters.parse(
-                "select a, b from tbl where a.name=:name and b.name=:name and c.description = :description");
-        assertEquals("select a, b from tbl where a.name=? and b.name=? and c.description = ?",
-                r.sql());
+                "select a, b from tbl where a.name=:name and b.name=:name and c.description = :description", ctx);
+        assertEquals("select a, b from tbl where a.name=? and b.name=? and c.description = ?", r.sql());
         assertEquals(Arrays.asList("name", "name", "description"), r.names());
     }
 
     @Test
     public void testSelectWithOneNamedParameterAndColonNameInQuotes() {
+        QueryContext ctx = PowerMockito.mock(QueryContext.class);
+        when(ctx.queryLanguage()).thenReturn(QueryLanguage.SQL);
+
         JdbcQuery r = NamedParameters
-                .parse("select a, b from tbl where a.name=:name and b.name=':name'");
+                .parse("select a, b from tbl where a.name=:name and b.name=':name'", ctx);
         assertEquals("select a, b from tbl where a.name=? and b.name=':name'", r.sql());
         assertEquals(Arrays.asList("name"), r.names());
     }
@@ -43,14 +52,20 @@ public class NamedParametersTest {
 
     @Test
     public void testDoubleColonNotModified() {
-        JdbcQuery r = NamedParameters.parse("select a::varchar, b from tbl where a.name=:name");
+        QueryContext ctx = PowerMockito.mock(QueryContext.class);
+        when(ctx.queryLanguage()).thenReturn(QueryLanguage.SQL);
+
+        JdbcQuery r = NamedParameters.parse("select a::varchar, b from tbl where a.name=:name", ctx);
         assertEquals("select a::varchar, b from tbl where a.name=?", r.sql());
         assertEquals(Arrays.asList("name"), r.names());
     }
 
     @Test
     public void testTripleColonNotModified() {
-        JdbcQuery r = NamedParameters.parse("select a:::varchar, b from tbl where a.name=:name");
+        QueryContext ctx = PowerMockito.mock(QueryContext.class);
+        when(ctx.queryLanguage()).thenReturn(QueryLanguage.SQL);
+
+        JdbcQuery r = NamedParameters.parse("select a:::varchar, b from tbl where a.name=:name", ctx);
         assertEquals("select a:::varchar, b from tbl where a.name=?", r.sql());
         assertEquals(Arrays.asList("name"), r.names());
     }
@@ -90,9 +105,11 @@ public class NamedParametersTest {
     }
 
     private static void assertParseUnchanged(String sql) {
-        JdbcQuery r = NamedParameters.parse(sql);
+        QueryContext ctx = PowerMockito.mock(QueryContext.class);
+        when(ctx.queryLanguage()).thenReturn(QueryLanguage.SQL);
+
+        JdbcQuery r = NamedParameters.parse(sql, ctx);
         assertEquals(sql, r.sql());
         assertTrue(r.names().isEmpty());
     }
-
 }
