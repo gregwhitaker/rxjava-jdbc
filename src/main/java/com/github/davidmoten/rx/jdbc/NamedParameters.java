@@ -3,8 +3,6 @@ package com.github.davidmoten.rx.jdbc;
 import java.util.ArrayList;
 import java.util.List;
 
-import static javafx.scene.input.KeyCode.Q;
-
 public final class NamedParameters {
 
     private NamedParameters() {
@@ -64,34 +62,42 @@ public final class NamedParameters {
 
     static JdbcQuery parseCypher(String cypher) {
         List<String> names = new ArrayList<String>();
+
         int length = cypher.length();
         StringBuilder parsedQuery = new StringBuilder(length);
+
         boolean inSingleQuote = false;
         boolean inDoubleQuote = false;
+
         for (int i = 0; i < length; i++) {
             char c = cypher.charAt(i);
             if (inSingleQuote) {
+                // Checking for end of the single quote
                 if (c == '\'') {
                     inSingleQuote = false;
                 }
             } else if (inDoubleQuote) {
+                // Checking for end of the double quote
                 if (c == '"') {
                     inDoubleQuote = false;
                 }
             } else {
                 if (c == '\'') {
+                    // Skip over anything in single quotes
                     inSingleQuote = true;
                 } else if (c == '"') {
+                    // Skip over anything in double quotes
                     inDoubleQuote = true;
                 } else if (c == ':' && i + 1 < length && !isFollowedOrPrefixedByColon(cypher, i)
-                        && Character.isJavaIdentifierStart(cypher.charAt(i + 1))) {
+                        && cypher.charAt(i + 1) == '{') {
+                    parsedQuery.append(":");
                     int j = i + 2;
-                    while (j < length && Character.isJavaIdentifierPart(cypher.charAt(j))) {
+                    while (j < length && Character.isJavaIdentifierPart(cypher.charAt(j)) && cypher.charAt(j) != '}') {
                         j++;
                     }
-                    String name = cypher.substring(i + 1, j);
+                    String name = cypher.substring(i + 2, j);
                     c = '?'; // replace the parameter with a question mark
-                    i += name.length(); // skip past the end if the parameter
+                    i += name.length() + 2; // skip past the end if the parameter
                     names.add(name);
                 }
             }
@@ -99,6 +105,8 @@ public final class NamedParameters {
         }
         return new JdbcQuery(parsedQuery.toString(), names);
     }
+
+
 
     // Visible for testing
     static boolean isFollowedOrPrefixedByColon(String sql, int i) {
