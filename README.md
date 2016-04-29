@@ -189,6 +189,13 @@ from the reactive style is obtained by *not leaving the monad*. That is, stay in
 the most of it. Chain everything together and leave ```toBlocking``` to 
 an endpoint or better still just subscribe with a ```Subscriber```.
 
+Query Language Support
+----------------------------
+This library supports query dialects in SQL for relational databases as well as CYPHER for Neo4j graph databases.
+
+* Creating a `Database` instance will give you a connection that supports the SQL dialect.
+* Creating a `Neo4jDatabase` instance will give you a connection that supports the CYPHER dialect.
+
 Dependencies
 --------------
 You can setup chains of dependencies that will determine the order of running of queries. 
