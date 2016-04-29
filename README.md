@@ -36,6 +36,7 @@ Table of Contents
 	- [Query types](#)
 	- [Functional composition of JDBC calls](#)
 	- [About toBlocking](#)
+	- [Query Language Support](#)
 	- [Dependencies](#)
 	- [Mixing explicit and Observable parameters](#)
 	- [Passing multiple parameter sets to a query](#)
@@ -194,7 +195,26 @@ Query Language Support
 This library supports query dialects in SQL for relational databases as well as CYPHER for Neo4j graph databases.
 
 * Creating a `Database` instance will give you a connection that supports the SQL dialect.
+	```java
+	Database db = Database.from(url);
+	List<String> names = db.
+			.select("select name from person where name > ? order by name")
+			.parameter("ALEX")
+			.getAs(String.class)
+			.toList().toBlocking().single();
+	System.out.println(names);
+	```
+
 * Creating a `Neo4jDatabase` instance will give you a connection that supports the CYPHER dialect.
+	```java
+	Neo4jDatabase db = Neo4jDatabase.from(url);
+	List<String> names = db.
+			.select("match (n:Person {name:{name}})-[:friend]->(f) RETURN f.name")
+			.parameters("ALEX")
+			.getAs(String.class)
+			.toList().toBlocking().single();
+	System.out.println(names);
+	```
 
 Dependencies
 --------------
